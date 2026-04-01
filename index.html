@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Strong — Fuel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+html,body{height:100%;background:#1C1C1E;font-family:-apple-system,Helvetica,sans-serif;}
+button{font-family:inherit;cursor:pointer;}
+input{font-family:inherit;}
+::-webkit-scrollbar{display:none;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
+const BLUE="#3399FF",RED="#FF3B30",GREEN="#30D158",ORANGE="#FF9500";
+const GOAL={kcal:2800,p:180,c:320,f:78};
+
+const FOOD_DB=[
+  {id:1, cat:"protein", name:"Chicken Breast",sub:"Grilled · High Protein",   kcal:{S:130,M:220,L:340},p:{S:28,M:46,L:72},c:{S:0,M:0,L:0},  f:{S:3,M:5,L:7}},
+  {id:2, cat:"carbs",   name:"White Rice",    sub:"Steamed · Carb Source",    kcal:{S:130,M:260,L:390},p:{S:3,M:5,L:8},  c:{S:28,M:56,L:84},f:{S:0,M:1,L:1}},
+  {id:3, cat:"protein", name:"Whole Eggs",    sub:"Boiled · Complete Protein", kcal:{S:70,M:140,L:210}, p:{S:6,M:12,L:18},c:{S:0,M:1,L:1},  f:{S:5,M:10,L:15}},
+  {id:4, cat:"carbs",   name:"Rolled Oats",   sub:"Slow Carbs · Pre-Workout",  kcal:{S:150,M:300,L:450},p:{S:5,M:10,L:15},c:{S:27,M:54,L:81},f:{S:3,M:6,L:9}},
+  {id:5, cat:"protein", name:"Whey Isolate",  sub:"Shake · Post-Workout",      kcal:{S:110,M:220,L:330},p:{S:25,M:50,L:75},c:{S:2,M:4,L:6}, f:{S:1,M:2,L:3}},
+  {id:6, cat:"carbs",   name:"Sweet Potato",  sub:"Baked · Clean Carbs",       kcal:{S:90,M:180,L:270}, p:{S:2,M:4,L:6},  c:{S:21,M:42,L:63},f:{S:0,M:0,L:1}},
+  {id:7, cat:"fats",    name:"Salmon",        sub:"Pan-seared · Omega-3",      kcal:{S:140,M:250,L:370},p:{S:20,M:34,L:52},c:{S:0,M:0,L:0}, f:{S:8,M:14,L:22}},
+  {id:8, cat:"protein", name:"Greek Yogurt",  sub:"Plain · Probiotic",         kcal:{S:60,M:130,L:200}, p:{S:10,M:17,L:26},c:{S:5,M:9,L:14},f:{S:0,M:2,L:3}},
+  {id:9, cat:"fruits",  name:"Banana",        sub:"Fresh · Quick Energy",      kcal:{S:53,M:89,L:134},  p:{S:1,M:1,L:2},  c:{S:14,M:23,L:34},f:{S:0,M:0,L:0}},
+  {id:10,cat:"veggies", name:"Broccoli",      sub:"Steamed · Micronutrients",  kcal:{S:20,M:55,L:90},   p:{S:2,M:4,L:7},  c:{S:4,M:11,L:18}, f:{S:0,M:1,L:1}},
+  {id:11,cat:"carbs",   name:"Brown Rice",    sub:"Cooked · Complex Carbs",    kcal:{S:110,M:220,L:330},p:{S:3,M:5,L:7},  c:{S:23,M:45,L:68},f:{S:1,M:2,L:2}},
+  {id:12,cat:"fats",    name:"Almonds",       sub:"Raw · Healthy Fats",        kcal:{S:82,M:164,L:246}, p:{S:3,M:6,L:9},  c:{S:3,M:6,L:9},  f:{S:7,M:14,L:21}},
+  {id:13,cat:"protein", name:"Tuna",          sub:"Canned · Lean Protein",     kcal:{S:80,M:150,L:220}, p:{S:18,M:33,L:50},c:{S:0,M:0,L:0},  f:{S:1,M:1,L:2}},
+  {id:14,cat:"veggies", name:"Spinach",       sub:"Raw · Iron Rich",           kcal:{S:10,M:25,L:40},   p:{S:1,M:3,L:5},  c:{S:1,M:3,L:5},  f:{S:0,M:0,L:0}},
+  {id:15,cat:"fruits",  name:"Apple",         sub:"Fresh · Fiber Source",      kcal:{S:40,M:80,L:120},  p:{S:0,M:0,L:1},  c:{S:11,M:21,L:32},f:{S:0,M:0,L:0}},
+  {id:16,cat:"drinks",  name:"Protein Shake", sub:"Mixed · Post-Workout",      kcal:{S:120,M:240,L:360},p:{S:20,M:40,L:60},c:{S:5,M:10,L:15},f:{S:2,M:4,L:6}},
+  {id:17,cat:"drinks",  name:"Oat Milk",      sub:"Unsweetened · Dairy-free",  kcal:{S:45,M:90,L:135},  p:{S:1,M:3,L:4},  c:{S:7,M:14,L:21}, f:{S:1,M:2,L:3}},
+  {id:18,cat:"snacks",  name:"Rice Cakes",    sub:"Plain · Low Cal",           kcal:{S:35,M:70,L:105},  p:{S:1,M:2,L:2},  c:{S:7,M:14,L:21}, f:{S:0,M:0,L:0}},
+  {id:19,cat:"snacks",  name:"Protein Bar",   sub:"Mixed · On-the-go",         kcal:{S:100,M:200,L:300},p:{S:10,M:20,L:30},c:{S:12,M:25,L:37},f:{S:3,M:6,L:9}},
+  {id:20,cat:"fats",    name:"Avocado",       sub:"Fresh · Healthy Fats",      kcal:{S:80,M:160,L:240}, p:{S:1,M:2,L:3},  c:{S:4,M:9,L:13},  f:{S:7,M:15,L:22}},
+];
+
+const CATEGORIES=[
+  {id:"all",     label:"All",     emoji:""},
+  {id:"protein", label:"Protein", emoji:"🥩"},
+  {id:"carbs",   label:"Carbs",   emoji:"🍚"},
+  {id:"fats",    label:"Fats",    emoji:"🥑"},
+  {id:"fruits",  label:"Fruits",  emoji:"🍌"},
+  {id:"veggies", label:"Veggies", emoji:"🥦"},
+  {id:"drinks",  label:"Drinks",  emoji:"🥤"},
+  {id:"snacks",  label:"Snacks",  emoji:"🥗"},
+];
+
+const PORTION_INFO={
+  S:{label:"Small", desc:"Snack / Cut Day", emoji:"🥗"},
+  M:{label:"Medium",desc:"Standard Meal",   emoji:"🍽️"},
+  L:{label:"Large", desc:"Bulk / Surplus",  emoji:"💪"},
+};
+
+const SEEDED_LOG=[
+  {uid:"s1",foodId:4,name:"Rolled Oats",   sub:"Slow Carbs · Pre-Workout",size:"M",kcal:300,p:10,c:54,f:6, time:"07:30"},
+  {uid:"s2",foodId:1,name:"Chicken Breast",sub:"Grilled · High Protein",  size:"L",kcal:340,p:72,c:0, f:7, time:"12:00"},
+  {uid:"s3",foodId:5,name:"Whey Isolate",  sub:"Shake · Post-Workout",    size:"S",kcal:110,p:25,c:2, f:1, time:"15:30"},
+];
+
+const uid=()=>Math.random().toString(36).slice(2,9);
+const nowStr=()=>new Date().toTimeString().slice(0,5);
+const calcTotals=log=>log.reduce((a,i)=>({kcal:a.kcal+i.kcal,p:a.p+i.p,c:a.c+i.c,f:a.f+i.f}),{kcal:0,p:0,c:0,f:0});
+
+/* icons */
+const Icon=({d,size=22,stroke="#8E8E93",sw=1.8})=>(
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {(Array.isArray(d)?d:[d]).map((p,i)=><path key={i} d={p}/>)}
+  </svg>
+);
+const IC={
+  user:    ["M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2","M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
+  clock:   ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z","M12 6v6l4 2"],
+  plus:    ["M12 5v14","M5 12h14"],
+  dumbbell:["M6.5 6.5h11","M6.5 17.5h11","M3 9.5h18","M3 14.5h18"],
+  ruler:   ["M3 21l18-18","M8.5 3.5 20.5 15.5","M3.5 8.5 15.5 20.5"],
+  search:  ["M21 21l-4.35-4.35","M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0"],
+  chevR:   "M9 18l6-6-6-6",
+  chevL:   "M15 18l-6-6 6-6",
+  flame:   "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
+  check:   ["M22 11.08V12a10 10 0 1 1-5.93-9.14","M22 4 12 14.01l-3-3"],
+  trash:   ["M3 6h18","M19 6l-1 14H6L5 6","M9 6V4h6v2"],
+  repeat:  ["M17 1l4 4-4 4","M3 11V9a4 4 0 0 1 4-4h14","M7 23l-4-4 4-4","M21 13v2a4 4 0 0 1-4 4H3"],
+  x:       ["M18 6 6 18","M6 6l12 12"],
+  star:    "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+};
+
+const Divider=()=><div style={{height:1,background:"#E5E5EA",margin:"0 20px"}}/>;
+
+/* ── SwipeRow ── */
+function SwipeRow({children,onDelete,onReAdd,swipeKey,activeSwipe,setActiveSwipe}){
+  const [tx,setTx]=useState(0);
+  const startX=useRef(null);
+  const W=152;
+  const open=useCallback(()=>{setTx(-W);setActiveSwipe(swipeKey);},[swipeKey]);
+  const close=useCallback(()=>{setTx(0);setActiveSwipe(null);},[]);
+  useEffect(()=>{if(activeSwipe!==swipeKey&&tx!==0)close();},[activeSwipe]);
+  const onTS=e=>{startX.current=e.touches[0].clientX;};
+  const onTM=e=>{
+    if(startX.current===null)return;
+    const dx=e.touches[0].clientX-startX.current;
+    setTx(Math.max(-W,Math.min(0,tx+dx)));
+    startX.current=e.touches[0].clientX;
+  };
+  const onTE=()=>{tx<-W/2?open():close();startX.current=null;};
+  const onMD=e=>{startX.current=e.clientX;};
+  const onMM=e=>{
+    if(startX.current===null)return;
+    const dx=e.clientX-startX.current;
+    if(Math.abs(dx)<3)return;
+    setTx(Math.max(-W,Math.min(0,tx+dx)));
+    startX.current=e.clientX;
+  };
+  const onMU=()=>{tx<-W/2?open():close();startX.current=null;};
+  return(
+    <div style={{position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",right:0,top:0,bottom:0,width:W,display:"flex"}}>
+        <button onClick={()=>{close();setTimeout(onReAdd,150);}}
+          style={{flex:1,background:BLUE,border:"none",color:"#fff",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+          <Icon d={IC.repeat} size={18} stroke="#fff" sw={2}/>
+          <span style={{fontSize:10,fontWeight:600}}>Re-Add</span>
+        </button>
+        <button onClick={()=>{close();setTimeout(onDelete,150);}}
+          style={{flex:1,background:RED,border:"none",color:"#fff",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+          <Icon d={IC.trash} size={18} stroke="#fff" sw={2}/>
+          <span style={{fontSize:10,fontWeight:600}}>Delete</span>
+        </button>
+      </div>
+      <div style={{transform:`translateX(${tx}px)`,transition:startX.current===null?"transform .25s ease":"none",
+        background:"#fff",position:"relative",userSelect:"none"}}
+        onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}
+        onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── SizeTag ── */
+function SizeTag({currentSize,onChangeSize}){
+  const [open,setOpen]=useState(false);
+  const toggle=e=>{e.stopPropagation();setOpen(o=>!o);};
+  const pick=(e,s)=>{e.stopPropagation();onChangeSize(s);setOpen(false);};
+  return(
+    <div style={{display:"flex",background:"#F2F2F7",borderRadius:7,padding:2,gap:2}}
+      onClick={e=>e.stopPropagation()}>
+      {open
+        ?["S","M","L"].map(s=>(
+          <button key={s} onClick={e=>pick(e,s)}
+            style={{padding:"3px 9px",borderRadius:5,border:"none",cursor:"pointer",
+              fontSize:12,fontWeight:700,
+              background:s===currentSize?BLUE:"transparent",
+              color:s===currentSize?"#fff":"#8E8E93",
+              transition:"background .15s,color .15s"}}>
+            {s}
+          </button>
+        ))
+        :<button onClick={toggle}
+          style={{padding:"3px 9px",borderRadius:5,border:"none",cursor:"pointer",
+            fontSize:12,fontWeight:700,background:"transparent",color:"#8E8E93"}}>
+          {currentSize}
+        </button>
+      }
+    </div>
+  );
+}
+
+/* ── EnergyBar ── */
+function EnergyBar({current,goal}){
+  const pct=Math.min((current/goal)*100,100);
+  const [w,setW]=useState(0);
+  useEffect(()=>{setTimeout(()=>setW(pct),120);},[pct]);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+        <span style={{fontSize:13,color:"#8E8E93"}}>Today's Fuel</span>
+        <span style={{fontSize:13,color:"#8E8E93"}}>
+          <span style={{color:"#000",fontWeight:600}}>{current.toLocaleString()}</span> / {goal.toLocaleString()} kcal
+        </span>
+      </div>
+      <div style={{height:10,background:"#E5E5EA",borderRadius:5,overflow:"hidden"}}>
+        <div style={{height:"100%",borderRadius:5,width:`${w}%`,
+          background:pct>90?RED:pct>70?ORANGE:BLUE,
+          transition:"width 0.9s cubic-bezier(0.16,1,0.3,1)"}}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── FuelDashboard ── */
+function FuelDashboard({onSearch,todayLog,freqLog,onDeleteLog,onReAddLog,onDeleteFreq,onReAddFreq,onChangeSizeLog,onChangeSizeFreq,totals}){
+  const macros=[{key:"p",label:"Protein",color:BLUE},{key:"c",label:"Carbs",color:GREEN},{key:"f",label:"Fat",color:ORANGE}];
+  const [activeSwipe,setActiveSwipe]=useState(null);
+
+  const LogRow=({item,onDel,onRe,onChangeSize,section,onUnstar})=>(
+    <SwipeRow swipeKey={`${section}-${item.uid}`} activeSwipe={activeSwipe} setActiveSwipe={setActiveSwipe}
+      onDelete={onDel} onReAdd={onRe}>
+      <div style={{padding:"13px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        {/* star unpin button — only for freq section */}
+        {section==="freq"&&(
+          <button onClick={e=>{e.stopPropagation();onUnstar&&onUnstar();}}
+            style={{background:"none",border:"none",padding:"0 10px 0 0",
+              flexShrink:0,display:"flex",alignItems:"center",cursor:"pointer"}}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill={ORANGE} stroke={ORANGE}
+              strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+        )}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:600,color:"#000",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.name}</div>
+          <div style={{fontSize:12,color:"#8E8E93",marginTop:2}}>{PORTION_INFO[item.size].label} · {item.kcal} kcal · P{item.p}g C{item.c}g F{item.f}g</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:10,flexShrink:0}}>
+          {item.time&&<span style={{fontSize:11,color:"#C7C7CC"}}>{item.time}</span>}
+          <SizeTag currentSize={item.size} onChangeSize={onChangeSize}/>
+          <Icon d={IC.chevR} size={14} stroke="#C7C7CC" sw={2}/>
+        </div>
+      </div>
+    </SwipeRow>
+  );
+
+  return(
+    <div style={{background:"#F2F2F7",minHeight:"100%",paddingBottom:90}}>
+      <div style={{background:"#fff",padding:"52px 20px 16px",borderBottom:"1px solid #E5E5EA"}}>
+        <div style={{fontSize:28,fontWeight:700,color:"#000",letterSpacing:"-0.5px"}}>Fuel</div>
+      </div>
+      <div style={{background:"#fff",marginTop:20}}>
+        <div style={{padding:"16px 20px"}}><EnergyBar current={totals.kcal} goal={GOAL.kcal}/></div>
+        <Divider/>
+        <div style={{display:"flex",padding:"14px 0"}}>
+          {macros.map((m,i)=>(
+            <div key={m.key} style={{flex:1,textAlign:"center",borderRight:i<2?"1px solid #E5E5EA":"none"}}>
+              <div style={{fontSize:21,fontWeight:700,color:"#000"}}>{totals[m.key]}<span style={{fontSize:12,fontWeight:400,color:"#8E8E93"}}>g</span></div>
+              <div style={{fontSize:11,color:m.color,fontWeight:600,marginTop:2}}>{m.label}</div>
+              <div style={{fontSize:10,color:"#C7C7CC",marginTop:1}}>/{GOAL[m.key]}g</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{background:"#fff",marginTop:10}}>
+        <div style={{padding:"13px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:12,color:"#8E8E93"}}>Remaining</div>
+            <div style={{fontSize:22,fontWeight:700,color:"#000"}}>{Math.max(0,GOAL.kcal-totals.kcal).toLocaleString()}<span style={{fontSize:13,fontWeight:400,color:"#8E8E93"}}> kcal</span></div>
+          </div>
+          <div style={{background:"#F2F2F7",borderRadius:10,padding:"7px 14px",textAlign:"center"}}>
+            <div style={{fontSize:11,color:"#8E8E93"}}>Next Session</div>
+            <div style={{fontSize:15,fontWeight:700,color:BLUE}}>~4h</div>
+          </div>
+        </div>
+      </div>
+      <div style={{padding:"14px 20px 0"}}>
+        <button onClick={onSearch}
+          style={{width:"100%",height:50,background:BLUE,border:"none",borderRadius:12,
+            color:"#fff",fontSize:17,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}
+          onMouseDown={e=>e.currentTarget.style.opacity="0.85"}
+          onMouseUp={e=>e.currentTarget.style.opacity="1"}>
+          <Icon d={IC.plus} size={20} stroke="#fff" sw={2.5}/>Add Food
+        </button>
+      </div>
+      <div style={{background:"#fff",marginTop:18}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 20px 4px"}}>
+          <span style={{fontSize:17,fontWeight:700,color:"#000"}}>Today's Log</span>
+          <span style={{fontSize:12,color:"#8E8E93"}}>{todayLog.length} items</span>
+        </div>
+        {todayLog.length===0
+          ?<div style={{padding:"20px",textAlign:"center",color:"#C7C7CC",fontSize:14}}>No food logged yet — tap Add Food above</div>
+          :todayLog.map((item,i)=>(
+            <div key={item.uid} style={{animation:"fadeUp .2s ease both",animationDelay:`${i*0.04}s`}}>
+              <LogRow item={item} section="today"
+                onDel={()=>onDeleteLog(item.uid)}
+                onRe={()=>onReAddLog(item)}
+                onChangeSize={s=>onChangeSizeLog(item.uid,s)}/>
+              {i<todayLog.length-1&&<Divider/>}
+            </div>
+          ))
+        }
+      </div>
+      {freqLog.length>0&&(
+        <div style={{background:"#fff",marginTop:18,marginBottom:4}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 20px 4px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill={ORANGE} stroke={ORANGE}
+                strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span style={{fontSize:17,fontWeight:700,color:"#000"}}>Frequently Logged</span>
+            </div>
+            <span style={{fontSize:12,color:"#8E8E93"}}>{freqLog.length} items</span>
+          </div>
+          {freqLog.map((item,i)=>(
+            <div key={item.uid} style={{animation:"fadeUp .2s ease both",animationDelay:`${i*0.04}s`}}>
+              <LogRow item={item} section="freq"
+                onDel={()=>onDeleteFreq(item.uid)}
+                onRe={()=>onReAddFreq(item)}
+                onChangeSize={s=>onChangeSizeFreq(item.uid,s)}
+                onUnstar={()=>onDeleteFreq(item.uid)}/>
+              {i<freqLog.length-1&&<Divider/>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── SearchScreen ── */
+function SearchScreen({onSelect,onBack,freqNames,freqFoodIds,onAddFreq,onRemoveFreq}){
+  const [query,setQuery]=useState("");
+  const [activeCat,setActiveCat]=useState("all");
+  const [starToast,setStarToast]=useState(null);
+  const inputRef=useRef(null);
+
+  useEffect(()=>{setTimeout(()=>inputRef.current?.focus(),160);},[]);
+
+  // when typing, reset category to all
+  const handleQuery=v=>{ setQuery(v); if(v) setActiveCat("all"); };
+
+  const freq=FOOD_DB.filter(f=>freqNames.has(f.name));
+
+  let list;
+  if(query){
+    list=FOOD_DB.filter(f=>
+      f.name.toLowerCase().includes(query.toLowerCase())||
+      f.sub.toLowerCase().includes(query.toLowerCase())
+    );
+  } else if(activeCat==="all"){
+    list=freq.length?freq:FOOD_DB.slice(0,8);
+  } else {
+    list=FOOD_DB.filter(f=>f.cat===activeCat);
+  }
+
+  const sectionLabel=query?"RESULTS":activeCat==="all"?(freq.length?"FREQUENTLY USED":"ALL FOODS"):CATEGORIES.find(c=>c.id===activeCat)?.label.toUpperCase();
+
+  const handleStar=(e,food)=>{
+    e.stopPropagation();
+    if(freqFoodIds.has(food.id)){onRemoveFreq(food.id);setStarToast("Removed");}
+    else{onAddFreq(food);setStarToast("Added to Frequently Logged ★");}
+    setTimeout(()=>setStarToast(null),1800);
+  };
+
+  return(
+    <div style={{background:"#F2F2F7",minHeight:"100%",paddingBottom:90}}>
+      {/* header */}
+      <div style={{background:"#fff",paddingTop:52,borderBottom:"1px solid #E5E5EA"}}>
+        <div style={{padding:"0 20px 12px",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={onBack} style={{background:"none",border:"none",color:BLUE,fontSize:17,padding:0}}>Cancel</button>
+          <div style={{flex:1,background:"#F2F2F7",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
+            <Icon d={IC.search} size={15} stroke="#8E8E93" sw={2}/>
+            <input ref={inputRef} value={query} onChange={e=>handleQuery(e.target.value)}
+              placeholder="Search food..."
+              style={{flex:1,background:"none",border:"none",outline:"none",fontSize:15,color:"#000"}}/>
+            {query&&<button onClick={()=>handleQuery("")} style={{background:"none",border:"none",padding:0}}>
+              <Icon d={IC.x} size={14} stroke="#8E8E93" sw={2}/>
+            </button>}
+          </div>
+        </div>
+        {/* category chips — manual drag scroll to bypass phone shell overflow:hidden */}
+        {(()=>{
+          const dragRef=useRef(null);
+          const isDragging=useRef(false);
+          const startX=useRef(0);
+          const scrollLeft=useRef(0);
+
+          const onMD=e=>{
+            isDragging.current=true;
+            startX.current=e.pageX||e.touches?.[0]?.pageX||0;
+            scrollLeft.current=dragRef.current.scrollLeft;
+          };
+          const onMM=e=>{
+            if(!isDragging.current)return;
+            const x=e.pageX||e.touches?.[0]?.pageX||0;
+            dragRef.current.scrollLeft=scrollLeft.current-(x-startX.current);
+          };
+          const onMU=()=>{ isDragging.current=false; };
+
+          return(
+            <div ref={dragRef}
+              onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
+              onTouchStart={onMD} onTouchMove={onMM} onTouchEnd={onMU}
+              style={{
+                display:"flex",gap:8,padding:"0 16px 14px",
+                overflowX:"scroll",scrollbarWidth:"none",
+                WebkitOverflowScrolling:"touch",
+                cursor:"grab", userSelect:"none",
+              }}>
+              {CATEGORIES.map(cat=>{
+                const isActive=activeCat===cat.id;
+                return(
+                  <button key={cat.id}
+                    onClick={()=>{ setActiveCat(cat.id); setQuery(""); }}
+                    style={{
+                      flexShrink:0,padding:"6px 14px",borderRadius:20,border:"none",
+                      background:isActive?BLUE:"#F2F2F7",
+                      color:isActive?"#fff":"#555",
+                      fontSize:13,fontWeight:isActive?700:500,
+                      cursor:"pointer",
+                      display:"flex",alignItems:"center",gap:5,
+                      transition:"background .15s,color .15s",
+                      whiteSpace:"nowrap",
+                    }}>
+                    {cat.emoji&&<span style={{fontSize:14}}>{cat.emoji}</span>}
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
+
+      {starToast&&(
+        <div style={{background:"rgba(0,0,0,0.78)",padding:"10px 20px",
+          display:"flex",alignItems:"center",gap:8,animation:"fadeUp .15s ease"}}>
+          <span style={{fontSize:13,fontWeight:600,color:"#000"}}>{starToast}</span>
+        </div>
+      )}
+
+      <div style={{background:"#fff",marginTop:16}}>
+        <div style={{padding:"10px 20px 4px",fontSize:11,color:"#8E8E93",fontWeight:600,letterSpacing:"0.05em"}}>{sectionLabel}</div>
+        {list.length===0
+          ?<div style={{padding:"28px 20px",textAlign:"center",color:"#C7C7CC",fontSize:14}}>No food in this category yet</div>
+          :list.map((food,i)=>{
+            const isFreq=freqFoodIds.has(food.id);
+            return(
+              <div key={food.id}>
+                <div style={{display:"flex",alignItems:"center",animation:"fadeUp .15s ease both",animationDelay:`${i*0.03}s`}}>
+                  <button onClick={e=>handleStar(e,food)}
+                    style={{flexShrink:0,width:44,background:"none",border:"none",
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      padding:"0 0 0 16px",alignSelf:"stretch"}}>
+                    <svg width={20} height={20} viewBox="0 0 24 24"
+                      fill={isFreq?ORANGE:"none"} stroke={isFreq?ORANGE:"#C7C7CC"}
+                      strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </button>
+                  <button onClick={()=>onSelect(food)}
+                    style={{flex:1,background:"none",border:"none",padding:"13px 16px 13px 10px",
+                      display:"flex",justifyContent:"space-between",alignItems:"center",
+                      cursor:"pointer",textAlign:"left"}}>
+                    <div>
+                      <div style={{fontSize:15,fontWeight:600,color:"#000"}}>{food.name}</div>
+                      <div style={{fontSize:12,color:"#8E8E93",marginTop:2}}>{food.sub}</div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0,marginLeft:8}}>
+                      <span style={{fontSize:13,color:"#8E8E93"}}>{food.kcal.M} kcal</span>
+                      <Icon d={IC.chevR} size={16} stroke="#C7C7CC" sw={2}/>
+                    </div>
+                  </button>
+                </div>
+                {i<list.length-1&&<Divider/>}
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ── PortionPicker ── */
+function PortionPicker({food,onConfirm,onBack}){
+  const [selected,setSelected]=useState("M");
+  return(
+    <div style={{background:"#F2F2F7",minHeight:"100%",paddingBottom:90}}>
+      <div style={{background:"#fff",padding:"52px 20px 16px",borderBottom:"1px solid #E5E5EA"}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:BLUE,fontSize:15,
+          padding:"0 0 8px",display:"flex",alignItems:"center",gap:2}}>
+          <Icon d={IC.chevL} size={18} stroke={BLUE} sw={2}/>Back
+        </button>
+        <div style={{fontSize:24,fontWeight:700,color:"#000",letterSpacing:"-0.4px"}}>{food.name}</div>
+        <div style={{fontSize:14,color:"#8E8E93",marginTop:3}}>{food.sub}</div>
+      </div>
+      <div style={{padding:"16px 20px 8px",fontSize:11,color:"#8E8E93",fontWeight:600,letterSpacing:"0.05em"}}>CHOOSE PORTION</div>
+      <div style={{padding:"0 20px",display:"flex",flexDirection:"column",gap:10}}>
+        {["S","M","L"].map(size=>{
+          const info=PORTION_INFO[size];
+          const isSel=selected===size;
+          return(
+            <button key={size} onClick={()=>setSelected(size)}
+              style={{background:"#fff",border:`2px solid ${isSel?BLUE:"transparent"}`,
+                borderRadius:14,padding:"15px 18px",
+                display:"flex",justifyContent:"space-between",alignItems:"center",
+                cursor:"pointer",width:"100%",textAlign:"left",
+                transition:"border-color .15s,transform .12s",
+                transform:isSel?"scale(1.01)":"scale(1)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:44,height:44,borderRadius:10,fontSize:22,
+                  background:isSel?BLUE:"#F2F2F7",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  transition:"background .15s"}}>{info.emoji}</div>
+                <div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                    <span style={{fontSize:20,fontWeight:700,color:isSel?BLUE:"#000"}}>{size}</span>
+                    <span style={{fontSize:15,fontWeight:600,color:"#000"}}>{info.label}</span>
+                  </div>
+                  <div style={{fontSize:13,color:"#8E8E93",marginTop:2}}>{info.desc}</div>
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:20,fontWeight:700,color:isSel?BLUE:"#000"}}>{food.kcal[size]}</div>
+                <div style={{fontSize:11,color:"#8E8E93"}}>kcal</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{background:"#fff",margin:"14px 0 0"}}>
+        <div style={{display:"flex",padding:"14px 0"}}>
+          {[["Protein","p",BLUE],["Carbs","c",GREEN],["Fat","f",ORANGE]].map(([label,key,color],i)=>(
+            <div key={key} style={{flex:1,textAlign:"center",borderRight:i<2?"1px solid #E5E5EA":"none"}}>
+              <div style={{fontSize:19,fontWeight:700,color:"#000"}}>{food[key][selected]}<span style={{fontSize:11,color:"#8E8E93",fontWeight:400}}>g</span></div>
+              <div style={{fontSize:11,color,fontWeight:600,marginTop:2}}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{padding:"14px 20px 0",display:"flex",flexDirection:"column",gap:10}}>
+        <button onClick={()=>onConfirm(food,selected,false)}
+          style={{width:"100%",height:50,background:BLUE,border:"none",borderRadius:12,color:"#fff",fontSize:17,fontWeight:600}}
+          onMouseDown={e=>e.currentTarget.style.opacity="0.85"}
+          onMouseUp={e=>e.currentTarget.style.opacity="1"}>
+          Log {PORTION_INFO[selected].label} Portion
+        </button>
+        <button onClick={()=>onConfirm(food,selected,true)}
+          style={{width:"100%",height:50,background:"#fff",border:`1.5px solid ${BLUE}`,borderRadius:12,color:BLUE,fontSize:17,fontWeight:600}}
+          onMouseDown={e=>e.currentTarget.style.opacity="0.7"}
+          onMouseUp={e=>e.currentTarget.style.opacity="1"}>
+          Log &amp; Add Another
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── SuccessScreen ── */
+function SuccessScreen({food,size,count,onDone,onAddMore}){
+  const [shown,setShown]=useState(false);
+  useEffect(()=>{setTimeout(()=>setShown(true),60);},[]);
+  const t=(delay,extra={})=>({opacity:shown?1:0,transition:`opacity 0.4s ease ${delay}s`,...extra});
+  return(
+    <div style={{background:"#fff",minHeight:"100%",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      padding:"40px 32px",textAlign:"center"}}>
+      <div style={{width:80,height:80,borderRadius:"50%",
+        background:shown?BLUE:"#E5E5EA",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        transition:"background 0.4s ease,transform 0.45s cubic-bezier(0.16,1,0.3,1)",
+        transform:shown?"scale(1)":"scale(0.55)",marginBottom:24}}>
+        <Icon d={IC.check} size={38} stroke="#fff" sw={2}/>
+      </div>
+      <div style={{fontSize:26,fontWeight:700,color:"#000",letterSpacing:"-0.4px",marginBottom:8,
+        ...t(0.15,{transform:shown?"translateY(0)":"translateY(10px)",transition:"all 0.4s ease 0.15s"})}}>
+        {count>1?`${count} Items Logged!`:"Fuel Logged!"}
+      </div>
+      <div style={{fontSize:16,color:"#8E8E93",marginBottom:6,...t(0.25)}}>
+        {food.name} · {PORTION_INFO[size].label}
+      </div>
+      <div style={{fontSize:24,fontWeight:700,color:BLUE,marginBottom:32,...t(0.3)}}>
+        +{food.kcal[size]} kcal
+      </div>
+      <div style={{background:"#F2F2F7",borderRadius:14,padding:"16px 24px",marginBottom:32,width:"100%",...t(0.4)}}>
+        <div style={{fontSize:14,color:"#8E8E93",marginBottom:6}}>Tonight's session</div>
+        <div style={{fontSize:16,fontWeight:600,color:"#000"}}>You're fueled. Ready to lift. 💪</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",...t(0.5)}}>
+        <button onClick={onAddMore}
+          style={{width:"100%",height:50,background:"#fff",border:`1.5px solid ${BLUE}`,borderRadius:12,color:BLUE,fontSize:17,fontWeight:600}}>
+          + Add More Food
+        </button>
+        <button onClick={onDone}
+          style={{width:"100%",height:50,background:BLUE,border:"none",borderRadius:12,color:"#fff",fontSize:17,fontWeight:600}}>
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── HistoryScreen ── */
+// Static workout history data (mirrors the screenshot style)
+const WORKOUT_HISTORY=[
+  {
+    id:"w1", date:"2026-03-20", dateLabel:"星期四, 3月20日",
+    title:"晚间锻炼", duration:"45分钟", volume:"60 kg", prs:1,
+    exercise:"3 × Bench Press", bestSet:"+5 kg × 5",
+  },
+  {
+    id:"w2", date:"2026-03-18", dateLabel:"星期三, 3月18日",
+    title:"晚间锻炼", duration:"21秒", volume:"20 kg", prs:3,
+    exercise:"1 × Ab Wheel", bestSet:"+10 kg × 2",
+  },
+  {
+    id:"w3", date:"2026-03-15", dateLabel:"星期六, 3月15日",
+    title:"腿部训练", duration:"52分钟", volume:"180 kg", prs:0,
+    exercise:"4 × Squat", bestSet:"80 kg × 8",
+  },
+];
+
+function HistoryScreen({fuelHistory}){
+  const [expandedFuel,setExpandedFuel]=useState(null);
+  const [menuOpen,setMenuOpen]=useState(null);   // workout id with open menu
+  const [shareCard,setShareCard]=useState(null); // workout object to share
+
+  // Build a date→fuelSession map for quick lookup
+  const fuelByDate=useMemo(()=>{
+    const map={};
+    fuelHistory.forEach(s=>{ map[s.date]=s; });
+    return map;
+  },[fuelHistory]);
+
+  // Group workouts by month
+  const grouped=useMemo(()=>{
+    const map={};
+    WORKOUT_HISTORY.forEach(w=>{
+      const d=new Date(w.date);
+      const key=d.toLocaleDateString("zh-CN",{year:"numeric",month:"long"});
+      if(!map[key])map[key]=[];
+      map[key].push(w);
+    });
+    return Object.entries(map);
+  },[]);
+
+  const MacroBar=({val,goal,color})=>{
+    const pct=Math.min((val/goal)*100,100);
+    return(
+      <div style={{flex:1,height:3,background:"#E5E5EA",borderRadius:2,overflow:"hidden"}}>
+        <div style={{height:"100%",width:`${pct}%`,background:color,
+          borderRadius:2,transition:"width .7s ease"}}/>
+      </div>
+    );
+  };
+
+  return(
+    <div style={{background:"#F2F2F7",minHeight:"100%",paddingBottom:90}}>
+      {/* header — matches screenshot */}
+      <div style={{background:"#fff",padding:"52px 20px 16px",
+        display:"flex",justifyContent:"space-between",alignItems:"flex-end",
+        borderBottom:"1px solid #E5E5EA"}}>
+        <div style={{fontSize:32,fontWeight:800,color:"#000",letterSpacing:"-0.5px"}}>历史</div>
+        <span style={{fontSize:15,color:BLUE,fontWeight:500,paddingBottom:4}}>日历</span>
+      </div>
+
+      {grouped.map(([month,workouts])=>(
+        <div key={month}>
+          {/* month label */}
+          <div style={{padding:"18px 20px 8px",fontSize:13,color:"#8E8E93",fontWeight:500}}>{month}</div>
+
+          {workouts.map(w=>{
+            const fuel=fuelByDate[w.date]||null;
+            const fuelOpen=expandedFuel===w.id;
+
+            return(
+              <div key={w.id} style={{
+                margin:"0 16px 14px",
+                background:"#fff",borderRadius:14,
+                boxShadow:"0 1px 4px rgba(0,0,0,0.07)",
+                overflow:"hidden",
+              }}>
+                {/* ── workout section (matches screenshot) ── */}
+                <div style={{padding:"16px 16px 14px"}}>
+                  {/* title row */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div style={{fontSize:16,fontWeight:700,color:"#000"}}>{w.title}</div>
+                    <div style={{position:"relative"}}>
+                      <button onClick={e=>{e.stopPropagation();setMenuOpen(menuOpen===w.id?null:w.id);}}
+                        style={{width:32,height:32,borderRadius:8,background:"#F2F2F7",border:"none",
+                          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+                        <span style={{fontSize:16,color:"#8E8E93",letterSpacing:1}}>···</span>
+                      </button>
+                    </div>
+                  </div>
+                  {/* date */}
+                  <div style={{fontSize:13,color:"#8E8E93",marginBottom:10}}>{w.dateLabel}</div>
+                  {/* stats row */}
+                  <div style={{display:"flex",gap:16,marginBottom:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <Icon d={IC.clock} size={14} stroke="#8E8E93" sw={2}/>
+                      <span style={{fontSize:13,color:"#555"}}>{w.duration}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <Icon d={IC.dumbbell} size={14} stroke="#8E8E93" sw={2}/>
+                      <span style={{fontSize:13,color:"#555"}}>{w.volume}</span>
+                    </div>
+                    {w.prs>0&&(
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{fontSize:13}}>🏆</span>
+                        <span style={{fontSize:13,color:"#555"}}>{w.prs} PRs</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* exercise + best set */}
+                  <div style={{display:"flex",gap:0}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"#000",marginBottom:3}}>运动</div>
+                      <div style={{fontSize:13,color:"#555"}}>{w.exercise}</div>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"#000",marginBottom:3}}>最佳组</div>
+                      <div style={{fontSize:13,color:"#555"}}>{w.bestSet}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── fuel section ── */}
+                {fuel?(
+                  <div style={{borderTop:"1px solid #F2F2F7"}}>
+                    {/* fuel summary row — tap to expand */}
+                    <button onClick={()=>setExpandedFuel(fuelOpen?null:w.id)}
+                      style={{width:"100%",background:"none",border:"none",cursor:"pointer",
+                        padding:"12px 16px",display:"flex",justifyContent:"space-between",
+                        alignItems:"center",textAlign:"left"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:14}}>🔥</span>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:600,color:"#000"}}>当日补给</div>
+                          <div style={{fontSize:11,color:"#8E8E93",marginTop:1}}>
+                            {fuel.totals.kcal} kcal · {fuel.items.length} 项食物
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        {/* mini macro bars */}
+                        <div style={{display:"flex",gap:3,width:54}}>
+                          <MacroBar val={fuel.totals.p} goal={GOAL.p} color={BLUE}/>
+                          <MacroBar val={fuel.totals.c} goal={GOAL.c} color={GREEN}/>
+                          <MacroBar val={fuel.totals.f} goal={GOAL.f} color={ORANGE}/>
+                        </div>
+                        <Icon d={fuelOpen?"M18 15l-6-6-6 6":"M6 9l6 6 6-6"}
+                          size={14} stroke="#C7C7CC" sw={2}/>
+                      </div>
+                    </button>
+
+                    {/* expanded food list */}
+                    {fuelOpen&&(
+                      <div style={{padding:"0 16px 12px",borderTop:"1px solid #F2F2F7"}}>
+                        {/* macro summary */}
+                        <div style={{display:"flex",padding:"10px 0 8px",gap:0,borderBottom:"1px solid #F2F2F7",marginBottom:8}}>
+                          {[["P",fuel.totals.p,BLUE],["C",fuel.totals.c,GREEN],["F",fuel.totals.f,ORANGE]].map(([l,v,c])=>(
+                            <div key={l} style={{flex:1,textAlign:"center"}}>
+                              <div style={{fontSize:15,fontWeight:700,color:"#000"}}>{v}<span style={{fontSize:10,color:"#8E8E93",fontWeight:400}}>g</span></div>
+                              <div style={{fontSize:10,color:c,fontWeight:600,marginTop:1}}>{l}</div>
+                            </div>
+                          ))}
+                        </div>
+                        {fuel.items.map((item,ii)=>(
+                          <div key={ii} style={{
+                            display:"flex",justifyContent:"space-between",alignItems:"center",
+                            padding:"8px 0",borderBottom:ii<fuel.items.length-1?"1px solid #F8F8F8":"none",
+                            animation:"fadeUp .15s ease both",animationDelay:`${ii*0.04}s`}}>
+                            <div>
+                              <div style={{fontSize:13,fontWeight:600,color:"#000"}}>{item.name}</div>
+                              <div style={{fontSize:11,color:"#8E8E93",marginTop:1}}>
+                                {PORTION_INFO[item.size].label} · P{item.p}g C{item.c}g F{item.f}g
+                              </div>
+                            </div>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontSize:12,color:"#8E8E93"}}>{item.kcal} kcal</span>
+                              <div style={{background:"#F2F2F7",borderRadius:4,padding:"2px 6px",
+                                fontSize:10,fontWeight:700,color:"#8E8E93"}}>{item.size}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ):(
+                  /* no fuel data for this day */
+                  <div style={{borderTop:"1px solid #F2F2F7",padding:"10px 16px",
+                    display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:14}}>🔥</span>
+                    <span style={{fontSize:12,color:"#C7C7CC"}}>当日无补给记录</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {/* ── dropdown menu overlay ── */}
+      {menuOpen&&(
+        <>
+          <div onClick={()=>setMenuOpen(null)}
+            style={{position:"fixed",inset:0,zIndex:400,background:"rgba(0,0,0,0.35)"}}/>
+          <div style={{
+            position:"fixed",
+            top:"50%",left:"50%",
+            transform:"translate(-30%,-50%)",
+            zIndex:500,
+            background:"#2C3036",
+            borderRadius:16,
+            overflow:"hidden",
+            minWidth:220,
+            boxShadow:"0 16px 48px rgba(0,0,0,0.4)",
+            animation:"fadeUp .2s ease",
+          }}>
+            {[
+              {icon:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7",icon2:"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z", label:"编辑锻炼",   color:BLUE,   action:()=>setMenuOpen(null)},
+              {icon:"M12 5v14M5 12h14",                                                                                                                                 label:"Save as Template", color:BLUE,  action:()=>setMenuOpen(null)},
+              {icon:"M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15",                                                      label:"Perform Again",    color:BLUE,  action:()=>setMenuOpen(null)},
+              {icon:"M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",                                                                               label:"分享",             color:BLUE,  action:()=>{const w=WORKOUT_HISTORY.find(x=>x.id===menuOpen);setShareCard(w);setMenuOpen(null);}},
+              {icon:"M18 6 6 18M6 6l12 12",                                                                                                                             label:"删除",             color:RED,   action:()=>setMenuOpen(null)},
+            ].map((item,i,arr)=>(
+              <button key={i} onClick={item.action}
+                style={{width:"100%",padding:"16px 20px",background:"none",border:"none",
+                  borderBottom:i<arr.length-1?"1px solid rgba(255,255,255,0.08)":"none",
+                  display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left"}}>
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none"
+                  stroke={item.color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d={item.icon}/>
+                  {item.icon2&&<path d={item.icon2}/>}
+                </svg>
+                <span style={{fontSize:16,fontWeight:500,color:"#fff"}}>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ── share card modal ── */}
+      {shareCard&&(
+        <>
+          <div onClick={()=>setShareCard(null)}
+            style={{position:"fixed",inset:0,zIndex:600,background:"rgba(0,0,0,0.6)"}}/>
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            transform:"translate(-50%,-50%)",
+            zIndex:700,width:300,
+            background:"linear-gradient(160deg,#f0f2f8 0%,#ffffff 100%)",
+            borderRadius:20,overflow:"hidden",
+            boxShadow:"0 24px 64px rgba(0,0,0,0.6)",
+            animation:"fadeUp .25s ease",
+          }}>
+            {/* card header */}
+            <div style={{padding:"20px 20px 12px",borderBottom:"1px solid #E5E5EA"}}>
+              <div style={{fontSize:11,color:"#8E8E93",letterSpacing:"0.08em",marginBottom:4}}>
+                {shareCard.dateLabel}
+              </div>
+              <div style={{fontSize:20,fontWeight:700,color:"#000",letterSpacing:"-0.3px"}}>
+                {shareCard.title}
+              </div>
+            </div>
+
+            {/* body + muscle SVG */}
+            <div style={{padding:"12px 16px 8px",display:"flex",gap:12,alignItems:"flex-start"}}>
+              {/* Human body — anatomical front + back view */}
+              {(()=>{
+                const ex=shareCard.exercise.toLowerCase();
+                const isBench=ex.includes("bench")||ex.includes("push")||ex.includes("chest")||ex.includes("fly");
+                const isBack=ex.includes("pull")||ex.includes("row")||ex.includes("lat")||ex.includes("back");
+                const isLeg=ex.includes("squat")||ex.includes("leg")||ex.includes("lunge")||ex.includes("calf");
+                const isAb=ex.includes("ab")||ex.includes("wheel")||ex.includes("core")||ex.includes("crunch")||ex.includes("plank");
+                const isShoulder=ex.includes("shoulder")||ex.includes("press")||ex.includes("delt")||ex.includes("lateral");
+                const isArm=ex.includes("curl")||ex.includes("tricep")||ex.includes("bicep")||ex.includes("arm");
+                const HL=BLUE;
+                const body="#dde3ee";
+                const outline="#a0aec0";
+                const muscle="#c8d3e8";
+                const FrontBody=()=>(
+                  <svg viewBox="0 0 80 190" width={72} height={166}>
+                    <ellipse cx="40" cy="13" rx="10" ry="12" fill={body} stroke={outline} strokeWidth="0.7"/>
+                    <rect x="36" y="24" width="8" height="7" rx="2" fill={body} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M27 31 Q40 28 53 31 L54 40 Q40 37 26 40Z" fill={isShoulder||isBack?HL:muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M27 40 Q34 38 40 41 L40 57 Q33 56 26 52Z" fill={isBench?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isBench?"0.9":"1"}/>
+                    <path d="M53 40 Q46 38 40 41 L40 57 Q47 56 54 52Z" fill={isBench?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isBench?"0.9":"1"}/>
+                    <ellipse cx="21" cy="43" rx="7" ry="9" fill={isShoulder||isBench?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isShoulder||isBench?"0.85":"1"}/>
+                    <ellipse cx="59" cy="43" rx="7" ry="9" fill={isShoulder||isBench?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isShoulder||isBench?"0.85":"1"}/>
+                    <path d="M14 52 Q11 58 12 68 Q16 71 20 69 Q22 59 20 52Z" fill={isArm?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isArm?"0.9":"1"}/>
+                    <path d="M66 52 Q69 58 68 68 Q64 71 60 69 Q58 59 60 52Z" fill={isArm?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isArm?"0.9":"1"}/>
+                    <path d="M12 68 Q10 74 11 82 Q14 84 18 83 Q20 74 20 68Z" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M68 68 Q70 74 69 82 Q66 84 62 83 Q60 74 60 68Z" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <rect x="33" y="57" width="7" height="7" rx="1.5" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5"/>
+                    <rect x="41" y="57" width="7" height="7" rx="1.5" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5"/>
+                    <rect x="33" y="65" width="7" height="7" rx="1.5" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isAb?"0.85":"1"}/>
+                    <rect x="41" y="65" width="7" height="7" rx="1.5" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isAb?"0.85":"1"}/>
+                    <rect x="33" y="73" width="7" height="6" rx="1.5" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isAb?"0.75":"1"}/>
+                    <rect x="41" y="73" width="7" height="6" rx="1.5" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isAb?"0.75":"1"}/>
+                    <path d="M26 53 Q28 63 29 79 Q26 80 24 76 Q23 66 25 53Z" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5" opacity="0.7"/>
+                    <path d="M54 53 Q52 63 51 79 Q54 80 56 76 Q57 66 55 53Z" fill={isAb?HL:muscle} stroke={outline} strokeWidth="0.5" opacity="0.7"/>
+                    <path d="M28 83 Q30 89 35 91 L45 91 Q50 89 52 83Z" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M27 91 Q23 101 24 118 Q28 122 34 120 Q37 108 36 91Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.9":"1"}/>
+                    <path d="M53 91 Q57 101 56 118 Q52 122 46 120 Q43 108 44 91Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.9":"1"}/>
+                    <path d="M36 91 Q38 108 38 120 Q40 120 42 120 Q42 108 44 91Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.4" opacity={isLeg?"0.7":"1"}/>
+                    <ellipse cx="30" cy="122" rx="5.5" ry="3.5" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <ellipse cx="50" cy="122" rx="5.5" ry="3.5" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M25 126 Q23 138 25 150 Q29 153 33 151 Q35 138 34 126Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.75":"1"}/>
+                    <path d="M55 126 Q57 138 55 150 Q51 153 47 151 Q45 138 46 126Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.75":"1"}/>
+                    <ellipse cx="29" cy="155" rx="7" ry="4" fill={body} stroke={outline} strokeWidth="0.5"/>
+                    <ellipse cx="51" cy="155" rx="7" ry="4" fill={body} stroke={outline} strokeWidth="0.5"/>
+                  </svg>
+                );
+                const BackBody=()=>(
+                  <svg viewBox="0 0 80 190" width={72} height={166}>
+                    <ellipse cx="40" cy="13" rx="10" ry="12" fill={body} stroke={outline} strokeWidth="0.7"/>
+                    <rect x="36" y="24" width="8" height="7" rx="2" fill={body} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M27 31 Q40 27 53 31 L54 41 Q40 37 26 41Z" fill={isBack||isShoulder?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isBack||isShoulder?"0.9":"1"}/>
+                    <ellipse cx="21" cy="43" rx="7" ry="9" fill={isShoulder?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isShoulder?"0.85":"1"}/>
+                    <ellipse cx="59" cy="43" rx="7" ry="9" fill={isShoulder?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isShoulder?"0.85":"1"}/>
+                    <path d="M26 41 Q22 52 24 67 Q28 70 32 68 Q34 53 32 41Z" fill={isBack?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isBack?"0.9":"1"}/>
+                    <path d="M54 41 Q58 52 56 67 Q52 70 48 68 Q46 53 48 41Z" fill={isBack?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isBack?"0.9":"1"}/>
+                    <path d="M32 43 Q40 40 48 43 L48 68 Q40 65 32 68Z" fill={isBack?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isBack?"0.85":"1"}/>
+                    <line x1="40" y1="31" x2="40" y2="83" stroke={outline} strokeWidth="0.5" opacity="0.5"/>
+                    <path d="M15 51 Q12 58 13 68 Q16 71 20 69 Q21 59 19 51Z" fill={isArm?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isArm?"0.85":"1"}/>
+                    <path d="M65 51 Q68 58 67 68 Q64 71 60 69 Q59 59 61 51Z" fill={isArm?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isArm?"0.85":"1"}/>
+                    <path d="M13 68 Q11 74 12 82 Q15 84 18 83 Q20 74 20 68Z" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M67 68 Q69 74 68 82 Q65 84 62 83 Q60 74 60 68Z" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M32 68 Q40 65 48 68 L48 83 Q40 81 32 83Z" fill={muscle} stroke={outline} strokeWidth="0.5"/>
+                    <path d="M27 83 Q25 94 27 103 Q32 107 38 103 Q40 93 40 83Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.85":"1"}/>
+                    <path d="M53 83 Q55 94 53 103 Q48 107 42 103 Q40 93 40 83Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.85":"1"}/>
+                    <path d="M27 103 Q24 113 25 122 Q29 126 34 123 Q37 112 37 103Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.9":"1"}/>
+                    <path d="M53 103 Q56 113 55 122 Q51 126 46 123 Q43 112 43 103Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.9":"1"}/>
+                    <path d="M25 126 Q23 137 25 148 Q29 152 33 149 Q35 137 34 126Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.8":"1"}/>
+                    <path d="M55 126 Q57 137 55 148 Q51 152 47 149 Q45 137 46 126Z" fill={isLeg?HL:muscle} stroke={outline} strokeWidth="0.5" opacity={isLeg?"0.8":"1"}/>
+                    <ellipse cx="29" cy="153" rx="7" ry="4" fill={body} stroke={outline} strokeWidth="0.5"/>
+                    <ellipse cx="51" cy="153" rx="7" ry="4" fill={body} stroke={outline} strokeWidth="0.5"/>
+                  </svg>
+                );
+                return(
+                  <div style={{display:"flex",gap:4,flexShrink:0}}>
+                    <FrontBody/><BackBody/>
+                  </div>
+                );
+              })()}
+
+              {/* stats */}
+              <div style={{flex:1,display:"flex",flexDirection:"column",gap:10,paddingTop:4}}>
+                {[
+                  {label:"总时长", val:shareCard.duration},
+                  {label:"总重量", val:shareCard.volume},
+                  {label:"PRs",    val:shareCard.prs>0?`${shareCard.prs} 个`:"—"},
+                ].map(s=>(
+                  <div key={s.label}>
+                    <div style={{fontSize:11,color:"#8E8E93",marginBottom:2}}>{s.label}</div>
+                    <div style={{fontSize:22,fontWeight:800,color:"#000",letterSpacing:"-0.5px"}}>{s.val}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* exercise detail */}
+            <div style={{margin:"0 16px",padding:"12px 14px",
+              background:"#F2F2F7",borderRadius:10,marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontSize:10,color:"#8E8E93",marginBottom:3}}>运动</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#fff"}}>{shareCard.exercise}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:10,color:"#8E8E93",marginBottom:3}}>最佳组</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#fff"}}>{shareCard.bestSet}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* fuel section */}
+            {(()=>{
+              const fuel=fuelByDate[shareCard.date];
+              return fuel?(
+                <div style={{margin:"0 16px",padding:"12px 14px",
+                  background:"#F2F2F7",borderRadius:10,marginBottom:16}}>
+                  <div style={{fontSize:10,color:"#8E8E93",marginBottom:8}}>当日补给</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontSize:24,fontWeight:800,color:BLUE}}>{fuel.totals.kcal}<span style={{fontSize:12,fontWeight:400,color:"#8E8E93"}}> kcal</span></div>
+                    <div style={{display:"flex",gap:10}}>
+                      {[["P",fuel.totals.p,BLUE],["C",fuel.totals.c,GREEN],["F",fuel.totals.f,ORANGE]].map(([l,v,c])=>(
+                        <div key={l} style={{textAlign:"center"}}>
+                          <div style={{fontSize:13,fontWeight:700,color:"#000"}}>{v}<span style={{fontSize:9,color:"#8E8E93"}}>g</span></div>
+                          <div style={{fontSize:9,color:c,fontWeight:600}}>{l}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ):null;
+            })()}
+
+            {/* Strong branding */}
+            <div style={{padding:"10px 20px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",
+              borderTop:"1px solid #E5E5EA"}}>
+              <div style={{fontSize:11,color:"#8E8E93"}}>Strong — Fuel</div>
+              <button onClick={()=>setShareCard(null)}
+                style={{background:BLUE,border:"none",borderRadius:8,
+                  padding:"8px 16px",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                关闭
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── HomeScreen ── */
+function HomeScreen({onLogFuel}){
+  const routines=[
+    {name:"Upper Body Push",sets:"8 sets · Chest, Shoulders"},
+    {name:"Pull Day A",     sets:"7 sets · Back, Biceps"},
+    {name:"Leg Day",        sets:"9 sets · Quads, Hamstrings"},
+  ];
+  return(
+    <div style={{background:"#F2F2F7",minHeight:"100%",paddingBottom:90}}>
+      <div style={{background:"#fff",padding:"52px 20px 16px",borderBottom:"1px solid #E5E5EA"}}>
+        <div style={{fontSize:28,fontWeight:700,color:"#000",letterSpacing:"-0.5px"}}>Start Workout</div>
+      </div>
+      <div style={{background:"#fff",marginTop:20}}>
+        <div style={{padding:"16px 20px 6px",fontSize:20,fontWeight:700,color:"#000"}}>Quick Start</div>
+        <div style={{padding:"8px 20px 16px",display:"flex",flexDirection:"column",gap:10}}>
+          <button style={{width:"100%",height:50,background:BLUE,border:"none",borderRadius:12,
+            color:"#fff",fontSize:17,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}
+            onMouseDown={e=>e.currentTarget.style.opacity="0.85"}
+            onMouseUp={e=>e.currentTarget.style.opacity="1"}>
+            <Icon d={IC.plus} size={20} stroke="#fff" sw={2.5}/>Start an Empty Workout
+          </button>
+          <button onClick={onLogFuel}
+            style={{width:"100%",height:50,background:"#fff",border:`1.5px solid ${BLUE}`,borderRadius:12,
+              color:BLUE,fontSize:17,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}
+            onMouseDown={e=>e.currentTarget.style.opacity="0.7"}
+            onMouseUp={e=>e.currentTarget.style.opacity="1"}>
+            <Icon d={IC.flame} size={18} stroke={BLUE} sw={2}/>Log Fuel
+          </button>
+        </div>
+      </div>
+      <div style={{background:"#fff",marginTop:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px 10px"}}>
+          <span style={{fontSize:20,fontWeight:700,color:"#000"}}>My Routines</span>
+          <span style={{fontSize:15,color:BLUE,fontWeight:500}}>Edit</span>
+        </div>
+        {routines.map((r,i)=>(
+          <div key={i}>
+            <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:16,fontWeight:600,color:"#000"}}>{r.name}</div>
+                <div style={{fontSize:13,color:"#8E8E93",marginTop:2}}>{r.sets}</div>
+              </div>
+              <Icon d={IC.chevR} size={18} stroke="#C7C7CC" sw={2}/>
+            </div>
+            {i<routines.length-1&&<Divider/>}
+          </div>
+        ))}
+        <div style={{padding:"10px 20px 16px"}}>
+          <button style={{width:"100%",height:44,background:"#F2F2F7",border:"none",
+            borderRadius:10,color:BLUE,fontSize:15,fontWeight:500}}>+ New Routine</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── TabBar ── */
+const TABS=[
+  {id:"profile",  d:IC.user,     label:"Profile"},
+  {id:"history",  d:IC.clock,    label:"History"},
+  {id:"home",     d:IC.plus,     label:""},
+  {id:"exercises",d:IC.dumbbell, label:"Exercises"},
+  {id:"measure",  d:IC.ruler,    label:"Measure"},
+];
+function TabBar({active,onChange}){
+  return(
+    <div style={{position:"absolute",bottom:0,left:0,right:0,height:83,background:"#fff",
+      borderTop:"1px solid #E5E5EA",display:"flex",alignItems:"stretch",paddingBottom:16,zIndex:100}}>
+      {TABS.map(tab=>{
+        const isC=tab.id==="home",isA=active===tab.id;
+        if(isC)return(
+          <div key="home" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <button onClick={()=>onChange("home")}
+              style={{width:44,height:44,borderRadius:"50%",background:BLUE,border:"none",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                boxShadow:`0 2px 10px ${BLUE}55`,transition:"transform .12s"}}
+              onMouseDown={e=>e.currentTarget.style.transform="scale(0.92)"}
+              onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
+              <Icon d={IC.plus} size={22} stroke="#fff" sw={2.5}/>
+            </button>
+          </div>
+        );
+        const col=isA?BLUE:"#8E8E93";
+        return(
+          <button key={tab.id} onClick={()=>onChange(tab.id)}
+            style={{flex:1,background:"none",border:"none",cursor:"pointer",
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+              gap:4,padding:"8px 0 0"}}>
+            <Icon d={tab.d} size={22} stroke={col} sw={isA?2.2:1.8}/>
+            <span style={{fontSize:10,color:col,fontWeight:isA?600:400}}>{tab.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Placeholder({d,title}){
+  return(
+    <div style={{background:"#F2F2F7",minHeight:"100%",display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",gap:12}}>
+      <Icon d={d} size={40} stroke="#C7C7CC" sw={1.5}/>
+      <div style={{fontSize:17,color:"#8E8E93",fontWeight:500}}>{title}</div>
+    </div>
+  );
+}
+
+/* ── App ── */
+function App(){
+  const [tab,setTab]=useState("home");
+  const [screen,setScreen]=useState("dashboard");
+  const [selFood,setSelFood]=useState(null);
+  const [selSize,setSelSize]=useState("M");
+  const [sessionCount,setSessionCount]=useState(0);
+  const [todayLog,setTodayLog]=useState(SEEDED_LOG);
+  const [freqLog,setFreqLog]=useState([
+    {uid:"f1",foodId:1,name:"Chicken Breast",sub:"Grilled · High Protein",size:"M",kcal:220,p:46,c:0, f:5,time:null},
+    {uid:"f2",foodId:5,name:"Whey Isolate",  sub:"Shake · Post-Workout",  size:"M",kcal:220,p:50,c:4, f:2,time:null},
+    {uid:"f3",foodId:2,name:"White Rice",    sub:"Steamed · Carb Source", size:"M",kcal:260,p:5, c:56,f:1,time:null},
+  ]);
+
+  const totals=useMemo(()=>calcTotals(todayLog),[todayLog]);
+  const freqNames=useMemo(()=>new Set(freqLog.map(i=>i.name)),[freqLog]);
+  const freqFoodIds=useMemo(()=>new Set(freqLog.map(i=>i.foodId)),[freqLog]);
+
+  const goFuel=()=>{setTab("fuel");setScreen("dashboard");};
+
+  const changeSizeLog=(id,s)=>setTodayLog(prev=>prev.map(item=>{
+    if(item.uid!==id)return item;
+    const food=FOOD_DB.find(f=>f.id===item.foodId);
+    return food?{...item,size:s,kcal:food.kcal[s],p:food.p[s],c:food.c[s],f:food.f[s]}:{...item,size:s};
+  }));
+  const changeSizeFreq=(id,s)=>setFreqLog(prev=>prev.map(item=>{
+    if(item.uid!==id)return item;
+    const food=FOOD_DB.find(f=>f.id===item.foodId);
+    return food?{...item,size:s,kcal:food.kcal[s],p:food.p[s],c:food.c[s],f:food.f[s]}:{...item,size:s};
+  }));
+
+  const [toast,setToast]=useState(null);
+  const showToast=name=>{setToast(name);setTimeout(()=>setToast(null),2000);};
+
+  const deleteLog=id=>setTodayLog(prev=>prev.filter(i=>i.uid!==id));
+  const reAddLog=item=>{setTodayLog(prev=>[{...item,uid:uid(),time:nowStr()},...prev]);showToast(item.name);};
+  const deleteFreq=id=>setFreqLog(prev=>prev.filter(i=>i.uid!==id));
+  const reAddFreq=item=>{setTodayLog(prev=>[{...item,uid:uid(),time:nowStr()},...prev]);showToast(item.name);};
+
+  const addFreq=food=>{
+    if(freqFoodIds.has(food.id))return;
+    setFreqLog(prev=>[{uid:uid(),foodId:food.id,name:food.name,sub:food.sub,
+      size:"M",kcal:food.kcal.M,p:food.p.M,c:food.c.M,f:food.f.M,time:null},...prev]);
+  };
+  const removeFreq=foodId=>setFreqLog(prev=>prev.filter(i=>i.foodId!==foodId));
+
+  // history: list of past fuel sessions {date, items[], totals}
+  const [fuelHistory,setFuelHistory]=useState([
+    {
+      id:"h1",
+      date:"2026-03-20",
+      dateLabel:"Thursday, Mar 20",
+      items:[
+        {name:"Rolled Oats",size:"M",kcal:300,p:10,c:54,f:6},
+        {name:"Chicken Breast",size:"L",kcal:340,p:72,c:0,f:7},
+        {name:"Whey Isolate",size:"S",kcal:110,p:25,c:2,f:1},
+      ],
+      totals:{kcal:750,p:107,c:56,f:14},
+    },
+    {
+      id:"h2",
+      date:"2026-03-19",
+      dateLabel:"Wednesday, Mar 19",
+      items:[
+        {name:"Whole Eggs",size:"M",kcal:140,p:12,c:1,f:10},
+        {name:"Brown Rice",size:"M",kcal:220,p:5,c:45,f:2},
+        {name:"Salmon",size:"M",kcal:250,p:34,c:0,f:14},
+        {name:"Banana",size:"S",kcal:53,p:1,c:14,f:0},
+      ],
+      totals:{kcal:663,p:52,c:60,f:26},
+    },
+    {
+      id:"h3",
+      date:"2026-03-18",
+      dateLabel:"Tuesday, Mar 18",
+      items:[
+        {name:"Greek Yogurt",size:"M",kcal:130,p:17,c:9,f:2},
+        {name:"Whey Isolate",size:"M",kcal:220,p:50,c:4,f:2},
+        {name:"Sweet Potato",size:"M",kcal:180,p:4,c:42,f:0},
+      ],
+      totals:{kcal:530,p:71,c:55,f:4},
+    },
+  ]);
+
+  const handleConfirm=(food,size,again)=>{
+    const entry={uid:uid(),foodId:food.id,name:food.name,sub:food.sub,
+      size,kcal:food.kcal[size],p:food.p[size],c:food.c[size],f:food.f[size],time:nowStr()};
+    setTodayLog(prev=>[entry,...prev]);
+    setSelFood(food);setSelSize(size);
+    setSessionCount(prev=>prev+1);
+    if(again)setScreen("search");
+    else setScreen("success");
+  };
+
+  // save today's log to history when clicking Done on success screen
+  const saveTodayToHistory=()=>{
+    if(todayLog.length===0)return;
+    const today=new Date();
+    const label=today.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+    const dateStr=today.toISOString().slice(0,10);
+    const tot=calcTotals(todayLog);
+    const session={
+      id:uid(), date:dateStr, dateLabel:label,
+      items:todayLog.map(i=>({name:i.name,size:i.size,kcal:i.kcal,p:i.p,c:i.c,f:i.f})),
+      totals:tot,
+    };
+    setFuelHistory(prev=>[session,...prev]);
+  };
+
+  const renderContent=()=>{
+    if(tab==="profile")   return <Placeholder d={IC.user}     title="Profile"/>;
+    if(tab==="history")   return <HistoryScreen fuelHistory={fuelHistory}/>;
+    if(tab==="exercises") return <Placeholder d={IC.dumbbell} title="Exercises"/>;
+    if(tab==="measure")   return <Placeholder d={IC.ruler}    title="Measure"/>;
+    if(tab==="home")      return <HomeScreen onLogFuel={goFuel}/>;
+    if(tab==="fuel"){
+      if(screen==="dashboard")return(
+        <FuelDashboard
+          onSearch={()=>setScreen("search")}
+          todayLog={todayLog} freqLog={freqLog} totals={totals}
+          onDeleteLog={deleteLog} onReAddLog={reAddLog}
+          onDeleteFreq={deleteFreq} onReAddFreq={reAddFreq}
+          onChangeSizeLog={changeSizeLog} onChangeSizeFreq={changeSizeFreq}
+        />
+      );
+      if(screen==="search")return(
+        <SearchScreen
+          onSelect={f=>{setSelFood(f);setScreen("portion");}}
+          onBack={()=>setScreen("dashboard")}
+          freqNames={freqNames} freqFoodIds={freqFoodIds}
+          onAddFreq={addFreq} onRemoveFreq={removeFreq}
+        />
+      );
+      if(screen==="portion")return(
+        <PortionPicker food={selFood} onConfirm={handleConfirm} onBack={()=>setScreen("search")}/>
+      );
+      if(screen==="success")return(
+        <SuccessScreen food={selFood} size={selSize} count={sessionCount}
+          onDone={()=>{saveTodayToHistory();setTab("home");setScreen("dashboard");setSessionCount(0);}}
+          onAddMore={()=>setScreen("search")}/>
+      );
+    }
+  };
+
+  const displayTab=tab==="fuel"?"home":tab;
+
+  return(
+    <div style={{minHeight:"100vh",background:"#1C1C1E",display:"flex",alignItems:"center",
+      justifyContent:"center",padding:"20px 0"}}>
+      <div data-phone="1" style={{width:375,height:812,background:"#F2F2F7",borderRadius:52,
+        overflow:"hidden",position:"relative",
+        boxShadow:"0 0 0 10px #2C2C2E,0 0 0 12px #3A3A3C,0 40px 100px rgba(0,0,0,0.6)",
+        border:"1px solid #3A3A3C"}}>
+        <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",
+          width:126,height:34,background:"#000",
+          borderBottomLeftRadius:20,borderBottomRightRadius:20,zIndex:200}}/>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:44,
+          display:"flex",justifyContent:"space-between",alignItems:"flex-end",
+          padding:"0 28px 6px",zIndex:150,pointerEvents:"none"}}>
+          <span style={{fontSize:12,fontWeight:600,color:"#000"}}>9:41</span>
+          <span style={{fontSize:10,color:"#000"}}>●●●</span>
+        </div>
+        <div style={{position:"absolute",inset:0,overflowY:"auto",overflowX:"hidden"}}>
+          {renderContent()}
+        </div>
+        {toast&&(
+          <div style={{position:"absolute",top:58,left:"50%",transform:"translateX(-50%)",
+            background:"rgba(0,0,0,0.82)",borderRadius:20,padding:"9px 18px",
+            display:"flex",alignItems:"center",gap:8,zIndex:300,
+            animation:"fadeUp .2s ease",whiteSpace:"nowrap"}}>
+            <Icon d={IC.check} size={14} stroke={GREEN} sw={2.5}/>
+            <span style={{fontSize:13,fontWeight:600,color:"#fff"}}>{toast} added ✓</span>
+          </div>
+        )}
+        <TabBar active={displayTab} onChange={t=>{setTab(t);if(t==="home")setScreen("dashboard");}}/>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
